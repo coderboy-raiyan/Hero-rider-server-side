@@ -22,6 +22,13 @@ async function run() {
     const database = client.db("hero_rider");
     const userCollection = database.collection("users");
 
+    // post the user data to the database
+    app.post("/users", async (req, res) => {
+      const userData = req.body;
+      const result = await userCollection.insertOne(userData);
+      res.send(result);
+    });
+
     console.log("connected");
   } finally {
   }
