@@ -29,6 +29,40 @@ async function run() {
       res.send(result);
     });
 
+    // get the users data
+    app.get("/users/:email", async (req, res) => {
+      const userEmail = req.params.email;
+      const filter = { email: userEmail };
+      const result = await userCollection.findOne(filter);
+      res.send(result);
+    });
+
+    // make a user admin
+    app.put("/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
+
+    // is user admin
+    app.get("/isadmin/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const result = await userCollection.findOne(filter);
+      let isAdmin = false;
+      if (result?.role === "admin") {
+        isAdmin = true;
+      }
+      res.send({ admin: isAdmin });
+    });
+
     console.log("connected");
   } finally {
   }
