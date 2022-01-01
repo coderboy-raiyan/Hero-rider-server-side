@@ -4,6 +4,7 @@ const port = process.env.PORT || 5000;
 require("dotenv").config();
 const cors = require("cors");
 const ObjectId = require("mongodb").ObjectId;
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 // middle ware
 app.use(cors());
@@ -79,6 +80,65 @@ async function run() {
       }
 
       res.send({ count, users });
+    });
+
+    // get ordered car object
+    app.get("/order/:id", async (req, res) => {
+      const orderId = req.params.id;
+      const filter = { _id: ObjectId(orderId) };
+      const result = await userCollection.findOne(filter);
+      res.send(result);
+    });
+
+    // payment intent
+    app.post("/create-payment-intent", async (req, res) => {
+      const paymentInfo = req.body;
+      const amount = paymentInfo.price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // update order details
+    app.put("/order/:id", async (req, res) => {
+      const orderId = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(orderId) };
+      const updateDoc = {
+        $set: {
+          payment: payment,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // block a user
+    app.put("/user/block/:id", async (req, res) => {
+      const userId = req.params.id;
+      const filter = { _id: ObjectId(userId) };
+      const updateDoc = {
+        $set: {
+          isBlocked: "blocked",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // find blocked user
+    app.get("/find/:email", async (req, res) => {
+      const userEmail = req.params.email;
+      const filter = { email: userEmail };
+      const result = await userCollection.findOne(filter);
+      res.send(result);
     });
 
     console.log("connected");
