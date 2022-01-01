@@ -41,13 +41,12 @@ async function run() {
     app.put("/admin/:email", async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
-      const options = { upsert: true };
       const updateDoc = {
         $set: {
           role: "admin",
         },
       };
-      const result = await userCollection.updateOne(filter, updateDoc, options);
+      const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
@@ -61,6 +60,25 @@ async function run() {
         isAdmin = true;
       }
       res.send({ admin: isAdmin });
+    });
+
+    // get all the user
+    app.get("/users", async (req, res) => {
+      const page = req.query.page;
+      const size = Number(req.query.size);
+      const result = userCollection.find({});
+      let users;
+      const count = await result.count();
+      if (page) {
+        users = await result
+          .skip(page * size)
+          .limit(size)
+          .toArray();
+      } else {
+        users = await result.toArray();
+      }
+
+      res.send({ count, users });
     });
 
     console.log("connected");
